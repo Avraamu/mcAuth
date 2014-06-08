@@ -10,28 +10,28 @@ file = "~/.minecraft/launcher_profiles.json"
 
 
 class McSession(object):
-    def __init__(self, file, username, password):
-        self.file = file
+    def __init__(self, file_name, username, password):
+        self.file_name = file_name
         self.username = username
         self.password = password
         self.clienttoken = ""
         self.file_c = {}
 
     def load_file(self):
-        if not os.path.exists(self.file):
-            f_obj_tmp = open(self.file, "w")
+        if not os.path.exists(self.file_name):
+            f_obj_tmp = open(self.file_name, "w")
             f_obj_tmp.write(" ")
             f_obj_tmp.close()
-        f_obj = open(self.file, "r")
+        f_obj = open(self.file_name, "r")
         file_c = f_obj.read()
         f_obj.close()
         return file_c
 
     def save_file(self):
-        f_obj = open(self.file, "w")
-        f_obj.write(self.file)
+        f_obj = open(self.file_name, "w")
+        f_obj.write(json.dump(self.file_c.text))
         f_obj.close()
-        return "File %s saved!" % self.file
+        return "File %s saved!" % self.file_name
 
     def authenticate_new(self):
         param = {
@@ -43,8 +43,8 @@ class McSession(object):
             "password": self.password,
             "clientToken": self.clienttoken
         }
-        req = requests.post(base_url + "/authenticate", data=json.dumps(param))
-        return req
+        self.file_c = requests.post(base_url + "/authenticate", data=json.dumps(param))
+        return self.file_c
 
     def validate_cur_session(self):
         param = {
