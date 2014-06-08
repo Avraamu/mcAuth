@@ -3,6 +3,9 @@ import simplejson as json
 import os.path
 
 base_url = "https://authserver.mojang.com"
+login_file = "testrun.txt"
+username = ""
+passwword = ""
 
 
 class McSession(object):
@@ -71,6 +74,6 @@ class McSession(object):
         requests.post(base_url + "/invalidate", data=json.dumps(param))
         return "Session Invalidated!"
 
-session = McSession("testrun.txt", "username", "password")
+session = McSession(login_file, username, password)
 session.authenticate_new()
 session.save_file()
