@@ -29,7 +29,7 @@ class McSession(object):
 
     def save_file(self):
         f_obj = open(self.file_name, "w")
-        f_obj.write(json.dump(self.file_c.text))
+        f_obj.write(json.dumps(self.file_c.text))
         f_obj.close()
         return "File %s saved!" % self.file_name
 
@@ -44,7 +44,7 @@ class McSession(object):
             "clientToken": self.clienttoken
         }
         self.file_c = requests.post(base_url + "/authenticate", data=json.dumps(param))
-        return self.file_c
+        print self.file_c.text
 
     def validate_cur_session(self):
         param = {
