@@ -5,7 +5,8 @@ import os.path
 base_url = "https://authserver.mojang.com"
 login_file = "testrun.txt"
 username = ""
-passwword = ""
+password = ""
+file = "~/.minecraft/launcher_profiles.json"
 
 
 class McSession(object):
@@ -28,7 +29,7 @@ class McSession(object):
 
     def save_file(self):
         f_obj = open(self.file, "w")
-        f_obj.write(McSession.load_file())
+        f_obj.write(self.file)
         f_obj.close()
         return "File %s saved!" % self.file
 
