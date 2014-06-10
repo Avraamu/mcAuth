@@ -4,77 +4,88 @@ import os.path
 
 base_url = "https://authserver.mojang.com"
 login_file = "testrun.txt"
-username = ""
+username = ""      # ~/.minecraft/launcher_profiles.json
 password = ""
-file = "~/.minecraft/launcher_profiles.json"
+clienttoken = "7660950e-7e03-4188-b6c1-8de5b640ced5"
 
 
-class McSession(object):
-    def __init__(self, file_name, username, password):
-        self.file_name = file_name
-        self.username = username
-        self.password = password
-        self.clienttoken = ""
-        self.file_c = {}
+def load_file(file_name):
+    if not os.path.exists(file_name):
+        f_obj_tmp = open(file_name, "w")
+        f_obj_tmp.write(" ")
+        f_obj_tmp.close()
+    f_obj = open(file_name, "r")
+    file_c = f_obj.read()
+    f_obj.close()
+    return file_c
 
-    def load_file(self):
-        if not os.path.exists(self.file_name):
-            f_obj_tmp = open(self.file_name, "w")
-            f_obj_tmp.write(" ")
-            f_obj_tmp.close()
-        f_obj = open(self.file_name, "r")
-        file_c = f_obj.read()
-        f_obj.close()
-        return file_c
-
-    def save_file(self):
-        f_obj = open(self.file_name, "w")
-        f_obj.write(json.dumps(self.file_c.text))
-        f_obj.close()
-        return "File %s saved!" % self.file_name
-
-    def authenticate_new(self):
-        param = {
-            "agent": {
-                "name": "Minecraft",
-                "version": 1
-            },
-            "username": self.username,
-            "password": self.password,
-            "clientToken": self.clienttoken
+def save_file(file_name, file_c, clienttoken, username):
+    param = {
+        "profiles": {
+            "Minecraft": {
+                "name": file_c[["selectedProfile"]["name"]],
+                "lastVersionId": "1.7.9",
+                "playerUUID": clienttoken
+            }
+        },
+        "selectedProfile": file_c["selectedProfile": "name"],
+        "clientToken": clienttoken,
+        "authenticationDatabase": {
+            file_c.text["selectedProfile": "id"]: {
+                "username": username,
+                "accessToken": file_c["accessToken"],
+                "userid": file_c["selectedProfile": "id"],
+                "uuid": clienttoken,
+                "displayName": file_c["selectedProfile": "name"]
+            }
         }
-        self.file_c = requests.post(base_url + "/authenticate", data=json.dumps(param))
-        print self.file_c.text
+    }
+    f_obj = open(file_name, "w")
+    f_obj.write(json.dumps(param))
+    f_obj.close()
+    return "File %s saved!" % file_name
 
-    def validate_cur_session(self):
-        param = {
-            "agent": {
-                "name": "Minecraft",
-                "version": 1
-            },
-            "username": self.username,
-            "password": self.password,
-            "clientToken": self.clienttoken
-        }
-        req = requests.post(base_url + "/validate", data=json.dumps(param))
-        if req.text == "":
-            return True
-        else:
-            return False
+def authenticate_new(username, password, clienttoken):
+    param = {
+        "agent": {
+            "name": "Minecraft",
+            "version": 1
+        },
+        "username": username,
+        "password": password,
+        "clientToken": clienttoken
+    }
+    file_c = requests.post(base_url + "/authenticate", data=json.dumps(param))
+    file_text = file_c.text
+    print file_text
+    return file_text
 
-    def invalidate_cur_session(self):
-        param = {
-            "agent": {
-                "name": "Minecraft",
-                "version": 1
-            },
-            "username": self.username,
-            "password": self.password,
-            "clientToken": self.clienttoken
-        }
-        requests.post(base_url + "/invalidate", data=json.dumps(param))
+def validate_cur_session(file_c):
+    param = {
+        "accessToken": file_c.text["accessToken"]
+    }
+    req = requests.post(base_url + "/validate", data=json.dumps(param))
+    if req.text == "":
+        return True
+    else:
+        return False
+
+def invalidate_cur_session(username, clienttoken):
+    param = {
+        "accessToken": file_c.text["accessToken"],
+        "clientToken": clienttoken
+    }
+    req = requests.post(base_url + "/invalidate", data=json.dumps(param))
+    if req.text == "":
         return "Session Invalidated!"
+    else:
+        return "Failed"
 
-session = McSession(login_file, username, password)
-session.authenticate_new()
-session.save_file()
+file_c = authenticate_new(username, password, clienttoken)
+#print file_c
+#print save_file(login_file, file_c, clienttoken, username)
+file_c = json.loads(file_c)
+print file_c
+for i in file_c:
+    print i
+    print file_c[i]
