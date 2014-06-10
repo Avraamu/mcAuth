@@ -4,8 +4,8 @@ import os.path
 
 base_url = "https://authserver.mojang.com"
 login_file = "testrun.txt"     # ~/.minecraft/launcher_profiles.json
-username = "philip.groet@gmail.com"
-password = "1Mindaccount"
+username = ""
+password = ""
 clienttoken = "7660950e-7e03-4188-b6c1-8de5b640ced5"
 
 
