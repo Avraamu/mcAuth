@@ -4,10 +4,19 @@ import os.path
 
 base_url = "https://authserver.mojang.com"
 login_file = "testrun.json"     # ~/.minecraft/launcher_profiles.json
-username = ""
-password = ""
+cred_file = "cred_file.json"
 clienttoken = "7660950e-7e03-4188-b6c1-8de5b640ced5"
 
+
+def load_cred(cred_file):
+    if not os.path.exists(cred_file):
+        f_obj_tmp = open(cred_file, "w")
+        f_obj_tmp.write(" ")
+        f_obj_tmp.close()
+    f_obj = open(cred_file, "r")
+    credentials = json.loads(f_obj.read())
+    f_obj.close()
+    return credentials
 
 def load_file(file_name):     # load the login file
     if not os.path.exists(file_name):
@@ -84,8 +93,9 @@ def invalidate_cur_session(username, clienttoken, file_c):
     else:
         return "Failed"
 
-file_c = authenticate_new(username, password, clienttoken)
-print save_file(login_file, file_c, clienttoken, username)
+credentials = load_cred(cred_file)
+file_c = authenticate_new(credentials["username"], credentials["password"], "clienttoken")
+print save_file(login_file, file_c, clienttoken, credentials["username"])
 #print file_c
 #print save_file(login_file, file_c, clienttoken, username)
 print file_c
