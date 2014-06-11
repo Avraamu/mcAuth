@@ -96,9 +96,3 @@ def invalidate_cur_session(username, clienttoken, file_c):
 credentials = load_cred(cred_file)
 file_c = authenticate_new(credentials["username"], credentials["password"], "clienttoken")
 print save_file(login_file, file_c, clienttoken, credentials["username"])
-#print file_c
-#print save_file(login_file, file_c, clienttoken, username)
-print file_c
-for i in file_c:
-    print i
-    print file_c[i]
