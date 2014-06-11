@@ -5,7 +5,7 @@ import base64
 
 base_url = "https://authserver.mojang.com"
 login_file = "testrun.json"     # ~/.minecraft/launcher_profiles.json
-cred_file = "cred_file.json"
+cred_file = "cred_file.txt"
 clienttoken = "7660950e-7e03-4188-b6c1-8de5b640ced5"
 
 
@@ -35,9 +35,8 @@ def load_file(file_name):     # load the login file
 def save_file(file_name, file_c, credentials):   # save login file
     param = {           #Formatted according to http://wiki.vg/Authentication
         "profiles": {
-            "Minecraft": {
+            file_c["selectedProfile"]["name"]: {
                 "name": file_c["selectedProfile"]["name"],
-                "lastVersionId": "1.7.9",
                 "playerUUID": file_c["clientToken"]
             }
         },
@@ -98,26 +97,47 @@ def invalidate_cur_session(file_c, credentials):
         return "Failed"
 
 
-credentials = load_cred(cred_file)
-file_c = load_file(login_file)
+try:
+    credentials = load_cred(cred_file)
+except:
+    print "Error loading credential file!"
+    credentials = {}
+    credentials["username"] = raw_input("Enter username: ")
+    credentials["password"] = raw_input("Enter password: ")
+    credentials["userid"] = "placeholder"
+    save_cred(cred_file, credentials)
+    print "Saved! Retrying to load..."
+    credentials = load_cred(cred_file)
+    print "Success!"
 
-print file_c
-if validate_cur_session(file_c, credentials) == False:
-    print "Session invalid, invalidating..."
-    invalidate_cur_session(file_c, credentials)
+
+try:
+    file_c = load_file(login_file)
+    if validate_cur_session(file_c, credentials) == False:
+        print "Session invalid, invalidating..."
+        invalidate_cur_session(file_c, credentials)
+        print "Creating new session..."
+        file_c = authenticate_new(credentials)
+        print "Created new session, saving..."
+        save_file(login_file, file_c, credentials)
+        print "Success!"
+    else:
+        print "Session valid!"
+except:
+    print "Error on loading %s" % login_file
     print "Creating new session..."
     file_c = authenticate_new(credentials)
     print "Created new session, saving..."
+    credentials["userid"] = file_c["selectedProfile"]["id"]
     save_file(login_file, file_c, credentials)
+    save_cred(cred_file, credentials)
     print "Success!"
-else:
-    print "Session valid!"
 
 """
 credentials = {}
-credentials["username"] = ""
-credentials["password"] = ""
-credentials["userid"] = ""
+credentials["username"] = "philip.groet@gmail.com"
+credentials["password"] = "(Fv!|vMe{TSv*5^z%ejYF%NZ5"
+credentials["userid"] = "placeholder"
 print credentials
 save_cred(cred_file, credentials)
 """
