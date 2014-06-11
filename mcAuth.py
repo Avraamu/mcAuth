@@ -3,13 +3,13 @@ import simplejson as json
 import os.path
 
 base_url = "https://authserver.mojang.com"
-login_file = "testrun.txt"     # ~/.minecraft/launcher_profiles.json
+login_file = "testrun.json"     # ~/.minecraft/launcher_profiles.json
 username = ""
 password = ""
 clienttoken = "7660950e-7e03-4188-b6c1-8de5b640ced5"
 
 
-def load_file(file_name):
+def load_file(file_name):     # load the login file
     if not os.path.exists(file_name):
         f_obj_tmp = open(file_name, "w")
         f_obj_tmp.write(" ")
@@ -19,8 +19,8 @@ def load_file(file_name):
     f_obj.close()
     return file_c
 
-def save_file(file_name, file_c, clienttoken, username):
-    param = {
+def save_file(file_name, file_c, clienttoken, username):   # save login file
+    param = {           #Formatted according to http://wiki.vg/Authentication
         "profiles": {
             "Minecraft": {
                 "name": file_c["selectedProfile"]["name"],
@@ -85,7 +85,7 @@ def invalidate_cur_session(username, clienttoken, file_c):
         return "Failed"
 
 file_c = authenticate_new(username, password, clienttoken)
-save_file(login_file, file_c, clienttoken, username)
+print save_file(login_file, file_c, clienttoken, username)
 #print file_c
 #print save_file(login_file, file_c, clienttoken, username)
 print file_c
