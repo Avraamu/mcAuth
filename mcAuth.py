@@ -115,9 +115,9 @@ else:
 
 """
 credentials = {}
-credentials["username"] = "philip.groet@gmail.com"
-credentials["password"] = "?9,U]%ZTmDnKOv27.q{oJq!9|"
-credentials["userid"] = "74e783c33ec044cf854958b137695625"
+credentials["username"] = ""
+credentials["password"] = ""
+credentials["userid"] = ""
 print credentials
 save_cred(cred_file, credentials)
 """
