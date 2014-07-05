@@ -6,8 +6,7 @@ import base64
 base_url = "https://authserver.mojang.com"
 login_file = "testrun.json"     # ~/.minecraft/launcher_profiles.json
 cred_file = "cred_file.txt"
-clienttoken = "7660950e-7e03-4188-b6c1-8de5b640ced5"
-authtries = 0
+#clienttoken = "7660950e-7e03-4188-b6c1-8de5b640ced5"
 
 
 def load_cred(cred_file):
