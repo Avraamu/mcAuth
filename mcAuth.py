@@ -105,7 +105,6 @@ def invalidate_cur_session(file_c, credentials):
         return "Failed"
 
 
-
 try:
     file_c = load_cred(cred_file)
     print "Credentials Successfully loaded!"
