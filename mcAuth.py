@@ -25,8 +25,8 @@ def save_cred(cred_file, credentials):
 
 def ask_credentials():
     credentials = {}
-    credentials["username"] = input("Enter username: ")
-    credentials["password"] = input("Enter password: ")
+    credentials["username"] = raw_input("Enter username: ")
+    credentials["password"] = raw_input("Enter password: ")
     credentials["userid"] = "useridplaceholder"
     return credentials
 
@@ -74,8 +74,8 @@ def authenticate_new(credentials):
         "password": credentials["password"],
     }
     file_c_tmp = requests.post(base_url + "/authenticate", data=json.dumps(param))
-    file_c_tmps = file_c_tmp.text
-    file_text = json.loads(file_c_tmps)
+    file_c_tmp = file_c_tmp.text
+    file_text = json.loads(file_c_tmp)
     #    if file_text["errorMessage"]:
     #        print "Failed with error: %s" % file_text["errorMessage"]
     print("Received: " + str(file_text))
@@ -89,7 +89,10 @@ def validate_cur_session(file_c, credentials):
     }
     req = requests.post(base_url + "/refresh", data=json.dumps(param))
     print(req.text)
-    file_c["authenticationDatabase"][credentials["userid"]]["accessToken"] = req.text["accessToken"]
+    reqs = json.loads(req.text)
+    file_c["authenticationDatabase"][credentials["userid"]]["accessToken"] = "0"
+    file_c["authenticationDatabase"][credentials["userid"]]["accessToken"] = reqs["accessToken"]
+    print "Session valid!"
     return file_c
 
 
@@ -105,18 +108,23 @@ def invalidate_cur_session(file_c, credentials):
         return "Failed"
 
 
-try:
-    file_c = load_cred(cred_file)
-    print "Credentials Successfully loaded!"
-except:
-    print "Error on loading credentials!"
+if os.path.exists(cred_file):
+    credentials = load_cred(cred_file)
+else:
+    print "credential file not found, making new"
     credentials = ask_credentials()
+    save_cred(cred_file, credentials)
 
-try:
-    load_file(login_file)
-    print "Success loading file"
-except:
+if os.path.exists(login_file):
+    file_c = load_file(login_file)
+    validate_cur_session(file_c, credentials)
+else:
     f_obj = open(login_file, "w")
-    f_obj.write(authenticate_new(credentials))
+    print "No login file, making new session"
+    file_c = authenticate_new(credentials)
+    print file_c
+    credentials["userid"] = file_c["selectedProfile"]["id"]
+    save_cred(cred_file, credentials)
+    save_file(login_file, file_c, credentials)
+    print file_c
 
-validate_cur_session(file_c, credentials)
