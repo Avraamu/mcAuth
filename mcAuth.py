@@ -1,6 +1,7 @@
 import requests
 import simplejson as json
 import os.path
+import base64
 
 base_url = "https://authserver.mojang.com"
 login_file = "testrun.json"     # ~/.minecraft/launcher_profiles.json
@@ -11,7 +12,7 @@ authtries = 0
 
 def load_cred(cred_file):
     f_obj = open(cred_file, "r")
-    credentials = json.loads(f_obj.read())
+    credentials = json.loads(base64.b64decode(f_obj.read()))
     f_obj.close()
     return credentials
 
@@ -19,7 +20,7 @@ def load_cred(cred_file):
 def save_cred(cred_file, credentials):
     f_obj = open(cred_file, "w")
     print(json.dumps(credentials))
-    f_obj.write(json.dumps(credentials))
+    f_obj.write(base64.b64encode(json.dumps(credentials)))
     f_obj.close()
 
 
