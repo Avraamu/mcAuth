@@ -1,11 +1,12 @@
 import requests
 import simplejson as json
-import os.path
 import base64
+global debug
 
 base_url = "https://authserver.mojang.com"
 login_file = "testrun.json"     # ~/.minecraft/launcher_profiles.json
 cred_file = "cred_file.txt"
+debug = True
 #clienttoken = "7660950e-7e03-4188-b6c1-8de5b640ced5"
 
 
@@ -38,7 +39,7 @@ def load_file(file_name):     # load the login file
     return file_c
 
 
-def save_file(file_name, file_c, credentials):   # save login file
+def output_to_file(file_name, file_c, credentials):   # save login file
     param = {                                                      #Formatted according to http://wiki.vg/Authentication
         "profiles": {
             file_c["selectedProfile"]["name"]: {
@@ -61,7 +62,15 @@ def save_file(file_name, file_c, credentials):   # save login file
     f_obj = open(file_name, "w")
     f_obj.write(json.dumps(param))
     f_obj.close()
-    return "File %s saved!" % file_name
+    if debug:
+        print "Successfully converted and saved login_file"
+    return True
+
+
+def org_to_file(login_file, file_c):
+    f_obj = open(login_file, "w")
+    f_obj.write(json.dumps(file_c))
+    f_obj.close()
 
 
 def authenticate_new(credentials):
@@ -78,7 +87,8 @@ def authenticate_new(credentials):
     file_text = json.loads(file_c_tmp)
     #    if file_text["errorMessage"]:
     #        print "Failed with error: %s" % file_text["errorMessage"]
-    print("Received: " + str(file_text))
+    if debug:
+        print("Received: " + str(file_text))
     return file_text
 
 
@@ -88,11 +98,12 @@ def validate_cur_session(file_c, credentials):
         "clientToken": file_c["clientToken"]
     }
     req = requests.post(base_url + "/refresh", data=json.dumps(param))
-    print(req.text)
+    if debug:
+        print("Received: " + req.text)
     reqs = json.loads(req.text)
-    file_c["authenticationDatabase"][credentials["userid"]]["accessToken"] = "0"
     file_c["authenticationDatabase"][credentials["userid"]]["accessToken"] = reqs["accessToken"]
-    print "Session valid!"
+    if debug:
+        print "Session valid!"
     return file_c
 
 
@@ -107,24 +118,42 @@ def invalidate_cur_session(file_c, credentials):
     else:
         return "Failed"
 
+if debug:
+    print "Debugging enabled!"
 
-if os.path.exists(cred_file):
+try:
     credentials = load_cred(cred_file)
-else:
-    print "credential file not found, making new"
+    if debug:
+        print "Loaded credentials"
+except:
+    if debug:
+        print "credential file error, making new"
     credentials = ask_credentials()
     save_cred(cred_file, credentials)
 
-if os.path.exists(login_file):
+"""
+file_c = load_file(login_file)
+file_c_tmp = validate_cur_session(file_c, credentials)
+org_to_file(login_file, file_c_tmp)
+"""
+try:
     file_c = load_file(login_file)
-    validate_cur_session(file_c, credentials)
-else:
-    f_obj = open(login_file, "w")
-    print "No login file, making new session"
+    try:
+        file_c = validate_cur_session(file_c, credentials)
+        org_to_file(login_file, file_c)
+    except:
+        if debug:
+            print "Error refreshing session! Making new session"
+        file_c = authenticate_new(credentials)
+        output_to_file(login_file, file_c)
+except:
+    if debug:
+        print "Error login file, making new session"
     file_c = authenticate_new(credentials)
-    print file_c
     credentials["userid"] = file_c["selectedProfile"]["id"]
     save_cred(cred_file, credentials)
-    save_file(login_file, file_c, credentials)
-    print file_c
+    output_to_file(login_file, file_c, credentials)
+    if debug:
+        print file_c
+
 
