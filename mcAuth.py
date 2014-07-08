@@ -3,11 +3,11 @@ import simplejson as json
 import base64
 global debug
 
+
 base_url = "https://authserver.mojang.com"
-login_file = "testrun.json"     # ~/.minecraft/launcher_profiles.json
+login_file = "/home/philip/.minecraft/launcher_profiles.json"     # ~/.minecraft/launcher_profiles.json
 cred_file = "cred_file.txt"
 debug = True
-#clienttoken = "7660950e-7e03-4188-b6c1-8de5b640ced5"
 
 
 def load_cred(cred_file):
@@ -44,7 +44,7 @@ def output_to_file(file_name, file_c, credentials):   # save login file
         "profiles": {
             file_c["selectedProfile"]["name"]: {
                 "name": file_c["selectedProfile"]["name"],
-                "playerUUID": file_c["selectedProfile"]["id"]
+                "playerUUID": insert_sep(file_c["selectedProfile"]["id"])
             }
         },
         "selectedProfile": file_c["selectedProfile"]["name"],
@@ -53,14 +53,13 @@ def output_to_file(file_name, file_c, credentials):   # save login file
             file_c["selectedProfile"]["id"]: {
                 "username": credentials["username"],
                 "accessToken": file_c["accessToken"],
-                "userid": file_c["selectedProfile"]["id"],
-                "uuid": file_c["clientToken"],
+                "uuid": insert_sep(file_c["selectedProfile"]["id"]),
                 "displayName": file_c["selectedProfile"]["name"]
             }
         }
     }
     f_obj = open(file_name, "w")
-    f_obj.write(json.dumps(param))
+    f_obj.write(json.dumps(param, sort_keys=True, indent=4 * ' '))
     f_obj.close()
     if debug:
         print "Successfully converted and saved login_file"
@@ -69,7 +68,7 @@ def output_to_file(file_name, file_c, credentials):   # save login file
 
 def org_to_file(login_file, file_c):
     f_obj = open(login_file, "w")
-    f_obj.write(json.dumps(file_c))
+    f_obj.write(json.dumps(file_c, sort_keys=True, indent=4 * ' '))
     f_obj.close()
 
 
@@ -85,10 +84,11 @@ def authenticate_new(credentials):
     file_c_tmp = requests.post(base_url + "/authenticate", data=json.dumps(param))
     file_c_tmp = file_c_tmp.text
     file_text = json.loads(file_c_tmp)
-    #    if file_text["errorMessage"]:
-    #        print "Failed with error: %s" % file_text["errorMessage"]
     if debug:
         print("Received: " + str(file_text))
+    if "error" in file_text.keys():
+        if file_text["error"] == "ForbiddenOperationException":
+            raise "Invalid username or password!"
     return file_text
 
 
@@ -103,7 +103,7 @@ def validate_cur_session(file_c, credentials):
     reqs = json.loads(req.text)
     file_c["authenticationDatabase"][credentials["userid"]]["accessToken"] = reqs["accessToken"]
     if debug:
-        print "Session valid!"
+        print "Session valid and refreshed!"
     return file_c
 
 
@@ -117,6 +117,16 @@ def invalidate_cur_session(file_c, credentials):
         return "Session Invalidated!"
     else:
         return "Failed"
+
+
+def insert_sep(string):
+    string = list(string)
+    string.insert(8, "-")
+    string.insert(13, "-")
+    string.insert(18, "-")
+    string.insert(23, "-")
+    return ''.join(string)
+
 
 if debug:
     print "Debugging enabled!"
