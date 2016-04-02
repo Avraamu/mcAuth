@@ -1,5 +1,6 @@
 import requests
 import simplejson as json
+import os
 
 url = 'https://authserver.mojang.com'
 username = 'philip.groet@gmail.com'
@@ -31,7 +32,7 @@ class Login:
                 "version": 1
             },
             "username": username,
-            "password": password,
+            "password": password
         }
         if self.clientToken != '':
             param["clientToken"] = dash(self.clientToken)
@@ -43,6 +44,7 @@ class Login:
             self.authenticated = False
             self.validClientToken = False
         else:
+            print('Successful new authentication')
             jsonResponse = json.loads(response.text)
             self.accessToken = jsonResponse['accessToken']
             self.clientToken = unDash(jsonResponse['clientToken'])
@@ -67,6 +69,7 @@ class Login:
             self.authenticated = False
             self.validClientToken = False
         else:
+            print('Successful refresh!')
             jsonResponse = json.loads(response.text)
             self.accessToken = jsonResponse['accessToken']
             self.clientToken = jsonResponse['clientToken']
@@ -86,6 +89,7 @@ class Login:
             print('Token could not be validated!')
         else:
             self.validClientToken = True
+            self.authenticated = True
             print('Token valid!')
 
     def saveauth(self):
@@ -129,6 +133,14 @@ class Login:
         self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
 
 obj = Login()
-obj.authenticate()
+obj.loadauth()
 obj.validate()
+if not obj.validClientToken:
+    obj.refresh()
+
+if not obj.authenticated:
+    obj.authenticate()
+
 obj.saveauth()
+
+os.system('java -jar ~/Desktop/Minecraft.jar')
