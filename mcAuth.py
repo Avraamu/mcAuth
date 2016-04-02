@@ -6,14 +6,20 @@ username = 'philip.groet@gmail.com'
 password = ';!(tGQUxENVE91:[cF*s)sekb'
 save_location = '/home/philip/.minecraft/launcher_profiles.json'
 
+
 def dash(string):
     return string[0:8] + '-' + string[8:12] + '-' + string[12:16] + '-' + string[16:20] + '-' + string[20:]
+
+
+def unDash(string):
+    return string.replace('-', '')
+
 
 class Login:
     def __init__(self):
         self.authenticated = False
         self.validClientToken = False
-        self.clientToken = ''
+        self.clientToken = 'd3573a14357345e7a94c1dc22fb8acbd'
         self.accessToken = ''
         self.profileIdentifier = ''
         self.playerName = ''
@@ -25,17 +31,21 @@ class Login:
                 "version": 1
             },
             "username": username,
-            "password": password
+            "password": password,
         }
+        if self.clientToken != '':
+            param["clientToken"] = dash(self.clientToken)
+
         response = requests.post(url + "/authenticate", data=json.dumps(param))
         if response.status_code != 200:
             # throw error
+            print('Could not authenticate!')
             self.authenticated = False
             self.validClientToken = False
         else:
             jsonResponse = json.loads(response.text)
             self.accessToken = jsonResponse['accessToken']
-            self.clientToken = jsonResponse['clientToken']
+            self.clientToken = unDash(jsonResponse['clientToken'])
             self.profileIdentifier = jsonResponse['availableProfiles'][0]['id']
             self.playerName = jsonResponse['availableProfiles'][0]['name']
             self.authenticated = True
@@ -53,6 +63,7 @@ class Login:
         response = requests.post(url + '/refresh', data=json.dumps(param))
         if response.status_code != 200:
             # throw error
+            print('Could not refresh!')
             self.authenticated = False
             self.validClientToken = False
         else:
@@ -67,15 +78,17 @@ class Login:
     def validate(self):
         param = {
             "accessToken": self.accessToken,
-            "clientToken": self.clientToken
+            "clientToken": dash(self.clientToken)
         }
         response = requests.post(url + '/validate', data=json.dumps(param))
         if response.status_code != 204:
             self.validClientToken = False
+            print('Token could not be validated!')
         else:
             self.validClientToken = True
+            print('Token valid!')
 
-    def save(self):
+    def saveauth(self):
         data = {
             "profiles": {   
                 self.playerName: {
@@ -102,11 +115,20 @@ class Login:
         f_obj = open(save_location, "w")
         f_obj.write(json.dumps(data))
         f_obj.close()
-        f_obj = open(save_location+'2', "w")
+        f_obj = open(save_location+'.generated', "w")
         f_obj.write(json.dumps(data))
         f_obj.close()
 
+    def loadauth(self):
+        f_obj = open(save_location, "r")
+        loaded = json.loads(f_obj.read())
+        f_obj.close()
+        self.profileIdentifier = unDash(loaded['selectedUser'])
+        self.clientToken = unDash(loaded['clientToken'])
+        self.accessToken = loaded['authenticationDatabase'][self.profileIdentifier]['accessToken']
+        self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
 
 obj = Login()
 obj.authenticate()
-obj.save()
+obj.validate()
+obj.saveauth()
