@@ -3,9 +3,7 @@ import simplejson as json
 import os
 
 url = 'https://authserver.mojang.com'
-username = 'philip.groet@gmail.com'
-password = ';!(tGQUxENVE91:[cF*s)sekb'
-save_location = os.expanduser('~') + '/.minecraft/launcher_profiles.json'
+save_location = os.path.expanduser('~') + '/.minecraft/launcher_profiles.json'
 
 
 def dash(string):
@@ -18,6 +16,11 @@ def unDash(string):
 
 class Login:
     def __init__(self):
+        f_obj = open('cred.json')
+        userpass = json.loads(f_obj.read())
+        self.username = userpass['username']
+        self.password = userpass['password']
+
         self.authenticated = False
         self.validClientToken = False
         self.clientToken = 'd3573a14357345e7a94c1dc22fb8acbd'
@@ -31,8 +34,8 @@ class Login:
                 "name": "Minecraft",
                 "version": 1
             },
-            "username": username,
-            "password": password
+            "username": self.username,
+            "password": self.password
         }
         if self.clientToken != '':
             param["clientToken"] = dash(self.clientToken)
@@ -103,7 +106,7 @@ class Login:
             "clientToken": dash(self.clientToken),
             "authenticationDatabase": {
                 self.profileIdentifier: {
-                    "username": username,
+                    "username": self.username,
                     "accessToken": self.accessToken,
                     "userid": "0698f5053e7748cf9740f8de370aa1c1",
                     "uuid": dash(self.profileIdentifier),
@@ -133,7 +136,11 @@ class Login:
         self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
 
 obj = Login()
-obj.loadauth()
+try:
+    obj.loadauth()
+except:
+    obj.authenticate()
+
 obj.validate()
 if not obj.validClientToken:
     obj.refresh()
