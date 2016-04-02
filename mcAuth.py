@@ -5,7 +5,7 @@ import os
 url = 'https://authserver.mojang.com'
 username = 'philip.groet@gmail.com'
 password = ';!(tGQUxENVE91:[cF*s)sekb'
-save_location = '/home/philip/.minecraft/launcher_profiles.json'
+save_location = os.expanduser('~') + '/.minecraft/launcher_profiles.json'
 
 
 def dash(string):
