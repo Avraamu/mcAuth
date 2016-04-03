@@ -23,7 +23,7 @@ class Login:
 
         self.authenticated = False
         self.validClientToken = False
-        self.clientToken = 'd3573a14357345e7a94c1dc22fb8acbd'
+        self.clientToken = ''
         self.accessToken = ''
         self.profileIdentifier = ''
         self.playerName = ''
@@ -150,4 +150,4 @@ if not obj.authenticated:
 
 obj.saveauth()
 
-os.system('java -jar ~/Desktop/Minecraft.jar')
+os.system('java -jar ~/Downloads/Minecraft.jar')
