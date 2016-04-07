@@ -39,13 +39,13 @@ class Login:
         f_obj.close()
         self.username = userpass['username']
         self.password = userpass['password']
+        self.mojangid = userpass['mojangid'] #undashed
 
         self.authenticated = False
         self.validClientToken = False
-        self.clientToken = '' #Always dashed
+        self.clientToken = '' #Always dashed, except for bug in /authenticate endpoint
         self.accessToken = '' #Always dashed
         self.profileIdentifier = '' #Always dashed except for in selected_profile
-        self.mojangid = '' #Not dashed
         self.playerName = ''
 
     def getmojangid(self):  #Need a valid accessToken for this to work
