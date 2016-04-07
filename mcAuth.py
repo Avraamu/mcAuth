@@ -28,6 +28,7 @@ class Login:
     def __init__(self):
         f_obj = open(cred_location)
         userpass = json.loads(f_obj.read())
+	f_obj.close()
         self.username = userpass['username']
         self.password = userpass['password']
 
