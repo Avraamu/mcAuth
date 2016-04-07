@@ -1,3 +1,7 @@
+#!/usr/bin/python
+
+import sys
+import getopt
 import requests
 import simplejson as json
 import os
@@ -8,8 +12,9 @@ save_location = os.path.expanduser('~') + '/.minecraft/launcher_profiles.json'
 cred_location = os.path.expanduser('~') + '/Downloads/cred.json'
 
 
-logging.basicConfig(filename=os.path.expanduser('~') + '/Downloads/mcAuth.log',level=logging.DEBUG)
+logging.basicConfig(stream=sys.stdout, filename=os.path.expanduser('~') + '/Downloads/mcAuth.log', level=logging.DEBUG)
 logging.debug('\n\n***Starting script!')
+
 
 def dash(string):
     return string[0:8] + '-' + string[8:12] + '-' + string[12:16] + '-' + string[16:20] + '-' + string[20:]
@@ -140,36 +145,74 @@ class Login:
         self.accessToken = loaded['authenticationDatabase'][self.profileIdentifier]['accessToken']
         self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
 
+
+def defaultrun():
+	try:
+	    obj = Login()
+	    try:
+		logging.debug('Attempting launcher_profiles.json read')
+		obj.loadauth()
+		logging.debug('Loaded profile data for user: ' + obj.playerName + ' ' + obj.username)
+	    except Exception as e:
+		logging.exception("Could not load authenticate file! Reauthenticating...")
+		obj.authenticate()
+
+	    obj.validate()
+	    if not obj.validClientToken:
+		logging.debug('No valid clientToken, refreshing...')
+		obj.refresh()
+
+	    if not obj.authenticated:
+		logging.debug('Profile does not seem to be authenticated! reauthenticating...')
+		obj.authenticate()
+
+	    logging.debug('Saving authentication...')
+	    obj.saveauth()
+	except Exception as e:
+	    logging.exception("CRITICAL: Could not authenticate at all")
+
+
+	logging.debug('Attempting minecraft launch...')
+	try:
+	    os.system('java -jar ~/Downloads/Minecraft.jar')
+	    logging.debug('Launcher seems to have been closed!')
+	except Exception as e:
+	    logging.exception("Unable to start launcher!")
+
+def cleanslate():
+	obj = Login()
+	try:
+		logging.debug('Trying authenticate...')
+		obj.authenticate()
+		obj.saveauth()
+	except:
+		logging.exception('Failed to authencticate :(, not saving.')
+
+
 try:
-    obj = Login()
-    try:
-	logging.debug('Attempting launcher_profiles.json read')
-        obj.loadauth()
-	logging.debug('Loaded profile data for user: ' + obj.playerName + ' ' + ob.username)
-    except Exception as e:
-	logging.exception("Could not load authenticate file! Reauthenticating...")
-        obj.authenticate()
+	opts, args = getopt.getopt(sys.argv[1:],"h", ["cleanslate", "cs"])
+except getopt.GetoptError:
+	print 'usage: mcAuth.py [--cleanslate] [-h]'
+	sys.exit(2)
+for opt, arg in opts:
+	if opt == "-h":
+		print 'usage: mcAuth.py [--cleanslate] [-h]'
+		print "    Run without parameters for normal execution \n    Run with --cs or --cleanslate option for new authenticate session"
+		sys.exit()
+	elif opt in ("--cleanslate", "--cs"):
+		cleanslate()
+		sys.exit()
 
-    obj.validate()
-    if not obj.validClientToken:
-	logging.debug('No valid clientToken, refreshing...')
-        obj.refresh()
-
-    if not obj.authenticated:
-	logging.debug('Profile does not seem to be authenticated! reauthenticating...')
-        obj.authenticate()
-
-    logging.debug('Saving authentication...')
-    obj.saveauth()
-except Exception as e:
-    logging.exception("CRITICAL: Could not authenticate at all")
-
-
-logging.debug('Attempting minecraft launch...')
-try:
-    os.system('java -jar ~/Downloads/Minecraft.jar')
-    logging.debug('Launcher seems to have been closed!')
-except Exception as e:
-    logging.exception("Unable to start launcher!")
+defaultrun()
 
 logging.info('Script execution came to an end')
+
+
+
+
+
+
+
+
+
+
