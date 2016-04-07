@@ -61,6 +61,7 @@ class Login:
             self.validClientToken = False
         else:
             jsonResponse = json.loads(response.text)
+	    logging.debug('Received accessToken: ' + jsonResponse['accessToken'])
             self.accessToken = jsonResponse['accessToken']
             logging.debug('Received clientToken: ' + jsonResponse['clientToken'])	#receive as undashed
             self.clientToken = unDash(jsonResponse['clientToken'])
@@ -166,9 +167,10 @@ def defaultrun():
 		obj.authenticate()
 
 	    obj.validate()
-	    if not obj.validClientToken:
-		logging.debug('No valid clientToken, refreshing...')
-		obj.refresh()
+#refreshing not working?
+#	    if not obj.validClientToken:
+#		logging.debug('No valid clientToken, refreshing...')
+#		obj.refresh()
 
 	    if not obj.authenticated:
 		logging.debug('Profile does not seem to be authenticated! reauthenticating...')
