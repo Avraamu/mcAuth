@@ -37,6 +37,7 @@ class Login:
         self.clientToken = '' #Always dashed
         self.accessToken = '' #Always dashed
         self.profileIdentifier = '' #Always dashed except for in selected_profile
+	self.mojanguserid = '' #Not dashed
         self.playerName = ''
 
     def authenticate(self):
@@ -127,7 +128,7 @@ class Login:
                 self.profileIdentifier: {
                     "username": self.username,
                     "accessToken": self.accessToken,
-                    "userid": "0698f5053e7748cf9740f8de370aa1c1",
+                    "userid": self.mojanguserid,
                     "uuid": dash(self.profileIdentifier),
                     "displayName": self.playerName
                 }
@@ -154,6 +155,7 @@ class Login:
         logging.debug('Loaded clientToken: ' + loaded['clientToken'])
         self.clientToken = loaded['clientToken']
         self.accessToken = loaded['authenticationDatabase'][self.profileIdentifier]['accessToken']
+        self.mojanguserid = loaded['authenticationDatabase'][self.profileIdentifier]['userid']
         self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
 	logging.debug('Loaded profile data for user: ' + self.playerName + ' ' + self.username)
 
