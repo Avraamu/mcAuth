@@ -180,7 +180,6 @@ class Login:
 
 def defaultrun():
     try:
-        obj = Login()
         try:
             obj.loadauth()
         except Exception as e:
@@ -197,7 +196,6 @@ def defaultrun():
             logging.debug('Profile does not seem to be authenticated! reauthenticating...')
             obj.authenticate()
         
-        obj.getmojangid()
         obj.saveauth()
     except Exception as e:
         logging.exception("CRITICAL: Could not authenticate at all")
@@ -207,7 +205,6 @@ def defaultrun():
     logging.debug('Launcher seems to have been closed!')
 
 def cleanslate():
-    obj = Login()
     try:
         logging.debug('Trying authenticate...')
         obj.authenticate()
@@ -217,32 +214,35 @@ def cleanslate():
 
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:],"h", ["cleanslate", "validate", "refresh", "getmojangid"])
+    opts, args = getopt.getopt(sys.argv[1:],"h", ['ct=', 'authenticate',  'cleanslate', 'validate', 'refresh', 'getmojangid'])
 except getopt.GetoptError:
-    print 'usage: mcAuth.py [-h] [--cleanslate] [--validate] [--refresh] [--getmojangid]'
+    print 'usage: mcAuth.py [-h] [--ct=CLIENTTOKEN] [--cleanslate] [--validate] [--refresh] [--getmojangid]'
     sys.exit(2)
+
+obj = Login()
 for opt, arg in opts:
-    if opt == "-h":
-        print 'Usage: mcAuth.py [-h] [--cleanslate] [--validate] [--refresh] [--getmojangid]'
-        print "    Run without parameters for normal execution"
+    if opt == '-h':
+        print 'Usage: mcAuth.py [-h] [--ct=CLIENTTOKEN] [--cleanslate] [--validate] [--refresh] [--getmojangid]'
+        print '    Run without parameters for normal execution'
         sys.exit()
-    elif opt in ("--cleanslate"):
+
+    if opt in ('--ct'):
+        obj.clientToken = arg
+
+    if opt in ('--cleanslate'):
         cleanslate()
         sys.exit()
-    elif opt in ("--validate"):
-        obj = Login()
+    elif opt in ('--validate'):
         obj.loadauth()
         obj.validate()
         sys.exit()
-    elif opt in ("--refresh"):
-        obj = Login()
+    elif opt in ('--refresh'):
         obj.loadauth()
         obj.refresh()
         obj.saveauth() 
         logging.debug('New accessToken is: ' + obj.accessToken)
         sys.exit()
-    elif opt in ("--getmojangid"):
-        obj = Login()
+    elif opt in ('--getmojangid'):
         obj.loadauth()
         obj.getmojangid()
         obj.saveauth()
