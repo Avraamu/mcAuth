@@ -23,6 +23,14 @@ def dash(string):
 def unDash(string):
     return string.replace('-', '')
 
+def isDashed(string):
+    logging.debug('isdashed: ' + string)
+    if string[8] == '-':
+	logging.debug('yes')
+	return True
+    else:
+	logging.debug('no')
+	return False
 
 class Login:
     def __init__(self):
@@ -37,7 +45,7 @@ class Login:
         self.clientToken = '' #Always dashed
         self.accessToken = '' #Always dashed
         self.profileIdentifier = '' #Always dashed except for in selected_profile
-	self.mojanguserid = '' #Not dashed
+	self.mojanguserid = '69c40c18e9d58f709f8c90fca112c416' #Not dashed
         self.playerName = ''
 
     def authenticate(self):
@@ -51,7 +59,7 @@ class Login:
             "password": self.password
         }
         if self.clientToken != '':
-            param["clientToken"] = dash(self.clientToken)
+            param["clientToken"] = self.clientToken
 	else:
 	    logging.debug('Sending no clientToken for authentication.')
 
@@ -65,13 +73,17 @@ class Login:
             jsonResponse = json.loads(response.text)
 	    logging.debug('Received accessToken: ' + jsonResponse['accessToken'])
             self.accessToken = jsonResponse['accessToken']
-            logging.debug('Received clientToken: ' + jsonResponse['clientToken'])	#receive as dashed
-            self.clientToken = jsonResponse['clientToken']
+            logging.debug('Received clientToken: ' + jsonResponse['clientToken'])	#receive as dashed or undashed if clienttoken was not supplied on initial request
+	    if isDashed(jsonResponse['clientToken']):
+		self.clientToken = jsonResponse['clientToken']
+	    else:
+		self.clientToken = dash(jsonResponse['clientToken'])
+	    logging.debug('New clienToken: ' + self.clientToken)
             self.profileIdentifier = jsonResponse['availableProfiles'][0]['id']
             self.playerName = jsonResponse['availableProfiles'][0]['name']
             self.authenticated = True
             self.validClientToken = True
-            logging.debug('Successful new authentication')
+            logging.debug('Successful new authentication (new clienttoken: ' + self.clientToken)
 
     def refresh(self):
         param = {
@@ -100,7 +112,7 @@ class Login:
             self.validClientToken = True
 
     def validate(self):
-	logging.debug('Validating session with accessToken: ' + self.accessToken + ' and clientToken: ' + dash(self.clientToken))
+	logging.debug('Validating session with accessToken: ' + self.accessToken + ' and clientToken: ' + self.clientToken)
         param = {
             "accessToken": self.accessToken,
             "clientToken": self.clientToken #Dashed
