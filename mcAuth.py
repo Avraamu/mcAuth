@@ -26,17 +26,17 @@ def unDash(string):
 def isDashed(string):
     logging.debug('isdashed: ' + string)
     if string[8] == '-':
-	logging.debug('yes')
-	return True
+        logging.debug('yes')
+        return True
     else:
-	logging.debug('no')
-	return False
+        logging.debug('no')
+        return False
 
 class Login:
     def __init__(self):
         f_obj = open(cred_location)
         userpass = json.loads(f_obj.read())
-	f_obj.close()
+        f_obj.close()
         self.username = userpass['username']
         self.password = userpass['password']
 
@@ -45,11 +45,20 @@ class Login:
         self.clientToken = '' #Always dashed
         self.accessToken = '' #Always dashed
         self.profileIdentifier = '' #Always dashed except for in selected_profile
-	self.mojanguserid = '69c40c18e9d58f709f8c90fca112c416' #Not dashed
+        self.mojangid = '' #Not dashed
         self.playerName = ''
 
+    def getmojangid(self):  #Need a valid accessToken for this to work
+        headers = {'Authorization': 'Bearer ' + self.accessToken}
+        response = requests.get('https://api.mojang.com/user', headers=headers)
+        if response.status_code != 200:
+            logging.debug('Could not get mojangid: ' + reponse.text)
+        else:
+            self.mojangid = json.loads(response.text)['id']
+            logging.debug('Got mojangid!: ' + self.mojangid)
+
     def authenticate(self):
-	logging.debug('Authenticating using clientToken: ' + self.clientToken)
+        logging.debug('Authenticating using clientToken: ' + self.clientToken)
         param = {
             "agent": {
                 "name": "Minecraft",
@@ -60,8 +69,8 @@ class Login:
         }
         if self.clientToken != '':
             param["clientToken"] = self.clientToken
-	else:
-	    logging.debug('Sending no clientToken for authentication.')
+        else:
+            logging.debug('Sending no clientToken for authentication.')
 
         response = requests.post(url + "/authenticate", data=json.dumps(param))
         if response.status_code != 200:
@@ -71,14 +80,14 @@ class Login:
             self.validClientToken = False
         else:
             jsonResponse = json.loads(response.text)
-	    logging.debug('Received accessToken: ' + jsonResponse['accessToken'])
+            logging.debug('Received accessToken: ' + jsonResponse['accessToken'])
             self.accessToken = jsonResponse['accessToken']
-            logging.debug('Received clientToken: ' + jsonResponse['clientToken'])	#receive as dashed or undashed if clienttoken was not supplied on initial request
-	    if isDashed(jsonResponse['clientToken']):
-		self.clientToken = jsonResponse['clientToken']
-	    else:
-		self.clientToken = dash(jsonResponse['clientToken'])
-	    logging.debug('New clienToken: ' + self.clientToken)
+            logging.debug('Received clientToken: ' + jsonResponse['clientToken'])   #receive as dashed or undashed if clienttoken was not supplied on initial request
+            if isDashed(jsonResponse['clientToken']):
+                self.clientToken = jsonResponse['clientToken']
+            else:
+                self.clientToken = dash(jsonResponse['clientToken'])
+            logging.debug('New clienToken: ' + self.clientToken)
             self.profileIdentifier = jsonResponse['availableProfiles'][0]['id']
             self.playerName = jsonResponse['availableProfiles'][0]['name']
             self.authenticated = True
@@ -105,14 +114,14 @@ class Login:
             jsonResponse = json.loads(response.text)
             self.accessToken = jsonResponse['accessToken']
             logging.debug('Received clientToken: ' + jsonResponse['clientToken'])
-            self.clientToken = jsonResponse['clientToken']	#receive undashed
+            self.clientToken = jsonResponse['clientToken']  #receive undashed
             self.profileIdentifier = jsonResponse['selectedProfile']['id']
             self.playerName = jsonResponse['selectedProfile']['name']
             self.authenticated = True
             self.validClientToken = True
 
     def validate(self):
-	logging.debug('Validating session with accessToken: ' + self.accessToken + ' and clientToken: ' + self.clientToken)
+        logging.debug('Validating session with accessToken: ' + self.accessToken + ' and clientToken: ' + self.clientToken)
         param = {
             "accessToken": self.accessToken,
             "clientToken": self.clientToken #Dashed
@@ -127,7 +136,7 @@ class Login:
             logging.debug('Token valid!')
 
     def saveauth(self):
-	logging.debug('Saving profile data to file.')
+        logging.debug('Saving profile data to file.')
         data = {
             "profiles": {   
                 self.playerName: {
@@ -135,12 +144,12 @@ class Login:
                 }
             },
             "selectedProfile": self.playerName,
-            "clientToken": self.clientToken,	#save as dashed
+            "clientToken": self.clientToken,    #save as dashed
             "authenticationDatabase": {
                 self.profileIdentifier: {
                     "username": self.username,
                     "accessToken": self.accessToken,
-                    "userid": self.mojanguserid,
+                    "userid": self.mojangid,
                     "uuid": dash(self.profileIdentifier),
                     "displayName": self.playerName
                 }
@@ -159,7 +168,7 @@ class Login:
         f_obj.close()
 
     def loadauth(self):
-	logging.debug('Loading profile file.')
+        logging.debug('Loading profile file.')
         f_obj = open(save_location, "r")
         loaded = json.loads(f_obj.read())
         f_obj.close()
@@ -167,77 +176,90 @@ class Login:
         logging.debug('Loaded clientToken: ' + loaded['clientToken'])
         self.clientToken = loaded['clientToken']
         self.accessToken = loaded['authenticationDatabase'][self.profileIdentifier]['accessToken']
-        self.mojanguserid = loaded['authenticationDatabase'][self.profileIdentifier]['userid']
+        self.mojangid = loaded['authenticationDatabase'][self.profileIdentifier]['userid']
         self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
-	logging.debug('Loaded profile data for user: ' + self.playerName + ' ' + self.username)
+        logging.debug('Loaded profile data for user: ' + self.playerName + ' ' + self.username)
 
 
 def defaultrun():
-	try:
-	    obj = Login()
-	    try:
-		obj.loadauth()
-	    except Exception as e:
-		logging.exception("Could not load authenticate file! Reauthenticating...")
-		obj.authenticate()
+    try:
+        obj = Login()
+        try:
+            obj.loadauth()
+        except Exception as e:
+            logging.exception("Could not load authenticate file! Reauthenticating...")
+            obj.authenticate()
 
-	    obj.validate()
+        obj.validate()
 #refreshing not working?
-#	    if not obj.validClientToken:
-#		logging.debug('No valid clientToken, refreshing...')
-#		obj.refresh()
+#       if not obj.validClientToken:
+#       logging.debug('No valid clientToken, refreshing...')
+#       obj.refresh()
 
-	    if not obj.authenticated:
-		logging.debug('Profile does not seem to be authenticated! reauthenticating...')
-		obj.authenticate()
+        if not obj.authenticated:
+            logging.debug('Profile does not seem to be authenticated! reauthenticating...')
+            obj.authenticate()
+        
+        obj.getmojangid()
+        obj.saveauth()
+    except Exception as e:
+        logging.exception("CRITICAL: Could not authenticate at all")
 
-	    obj.saveauth()
-	except Exception as e:
-	    logging.exception("CRITICAL: Could not authenticate at all")
-
-
-	logging.debug('Attempting minecraft launch...')
-	try:
-	    os.system('java -jar ~/Downloads/Minecraft.jar')
-	    logging.debug('Launcher seems to have been closed!')
-	except Exception as e:
-	    logging.exception("Unable to start launcher!")
+    logging.debug('Attempting minecraft launch...')
+    os.system('java -jar ~/Downloads/Minecraft.jar')
+    logging.debug('Launcher seems to have been closed!')
 
 def cleanslate():
-	obj = Login()
-	try:
-		logging.debug('Trying authenticate...')
-		obj.authenticate()
-		obj.saveauth()
-	except:
-		logging.exception('Failed to authencticate :(, not saving.')
+    obj = Login()
+    try:
+        logging.debug('Trying authenticate...')
+        obj.authenticate()
+        obj.saveauth()
+    except:
+        logging.exception('Failed to authencticate :(, not saving.')
 
 
 try:
-	opts, args = getopt.getopt(sys.argv[1:],"h", ["cleanslate", "validate", "refresh"])
+    opts, args = getopt.getopt(sys.argv[1:],"h", ["cleanslate", "validate", "refresh", "getmojangid"])
 except getopt.GetoptError:
-	print 'usage: mcAuth.py [-h] [--cleanslate] [--validate] [--refresh]'
-	sys.exit(2)
+    print 'usage: mcAuth.py [-h] [--cleanslate] [--validate] [--refresh] [--getmojangid]'
+    sys.exit(2)
 for opt, arg in opts:
-	if opt == "-h":
-		print 'Usage: mcAuth.py [-h] [--cleanslate] [--validate] [--refresh]'
-		print "    Run without parameters for normal execution"
-		sys.exit()
-	elif opt in ("--cleanslate"):
-		cleanslate()
-		sys.exit()
-	elif opt in ("--validate"):
-		obj = Login()
-		obj.loadauth()
-		obj.validate()
-		sys.exit()
-	elif opt in ("--refresh"):
-		obj = Login()
-		obj.loadauth()
-		obj.refresh()
-		obj.saveauth() 
-		logging.debug('New accessToken is: ' + obj.accessToken)
-		sys.exit()
+    if opt == "-h":
+        print 'Usage: mcAuth.py [-h] [--cleanslate] [--validate] [--refresh] [--getmojangid]'
+        print "    Run without parameters for normal execution"
+        sys.exit()
+    elif opt in ("--cleanslate"):
+        cleanslate()
+        sys.exit()
+    elif opt in ("--validate"):
+        obj = Login()
+        obj.loadauth()
+        obj.validate()
+        sys.exit()
+    elif opt in ("--refresh"):
+        obj = Login()
+        obj.loadauth()
+        obj.refresh()
+        obj.saveauth() 
+        logging.debug('New accessToken is: ' + obj.accessToken)
+        sys.exit()
+    elif opt in ("--getmojangid"):
+        obj = Login()
+        obj.loadauth()
+        obj.getmojangid()
+        obj.saveauth()
+        f_obj = open(cred_location, 'r+')
+        contents = f_obj.read()
+        logging.debug(contents)
+        contents = json.loads(contents)
+        contents['mojangid'] = obj.mojangid
+        f_obj.seek(0)
+        f_obj.write(json.dumps(contents))
+        f_obj.close()
+
+        sys.exit()
+
 
 defaultrun()
 
