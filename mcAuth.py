@@ -34,9 +34,9 @@ class Login:
 
         self.authenticated = False
         self.validClientToken = False
-        self.clientToken = ''
-        self.accessToken = ''
-        self.profileIdentifier = ''
+        self.clientToken = '' #Always dashed
+        self.accessToken = '' #Always dashed
+        self.profileIdentifier = '' #Always dashed except for in selected_profile
         self.playerName = ''
 
     def authenticate(self):
@@ -62,9 +62,10 @@ class Login:
             self.validClientToken = False
         else:
             jsonResponse = json.loads(response.text)
+	    logging.debug('Received accessToken: ' + jsonResponse['accessToken'])
             self.accessToken = jsonResponse['accessToken']
-            logging.debug('Received clientToken: ' + jsonResponse['clientToken'])	#receive as undashed
-            self.clientToken = unDash(jsonResponse['clientToken'])
+            logging.debug('Received clientToken: ' + jsonResponse['clientToken'])	#receive as dashed
+            self.clientToken = jsonResponse['clientToken']
             self.profileIdentifier = jsonResponse['availableProfiles'][0]['id']
             self.playerName = jsonResponse['availableProfiles'][0]['name']
             self.authenticated = True
@@ -74,7 +75,7 @@ class Login:
     def refresh(self):
         param = {
             "accessToken": self.accessToken,
-            "clientToken": self.clientToken,
+            "clientToken": unDash(self.clientToken),
             "selectedProfile": {
                 "id": self.profileIdentifier,
                 "name": self.playerName
@@ -98,10 +99,10 @@ class Login:
             self.validClientToken = True
 
     def validate(self):
-	logging.debug('Validating session...')
+	logging.debug('Validating session with accessToken: ' + self.accessToken + ' and clientToken: ' + dash(self.clientToken))
         param = {
             "accessToken": self.accessToken,
-            "clientToken": dash(self.clientToken) #Dashed
+            "clientToken": self.clientToken #Dashed
         }
         response = requests.post(url + '/validate', data=json.dumps(param))
         if response.status_code != 204:
@@ -121,7 +122,7 @@ class Login:
                 }
             },
             "selectedProfile": self.playerName,
-            "clientToken": dash(self.clientToken),	#save as dashed
+            "clientToken": self.clientToken,	#save as dashed
             "authenticationDatabase": {
                 self.profileIdentifier: {
                     "username": self.username,
@@ -149,9 +150,9 @@ class Login:
         f_obj = open(save_location, "r")
         loaded = json.loads(f_obj.read())
         f_obj.close()
-        self.profileIdentifier = unDash(loaded['selectedUser'])
+        self.profileIdentifier = loaded['selectedUser']
         logging.debug('Loaded clientToken: ' + loaded['clientToken'])
-        self.clientToken = unDash(loaded['clientToken'])
+        self.clientToken = loaded['clientToken']
         self.accessToken = loaded['authenticationDatabase'][self.profileIdentifier]['accessToken']
         self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
 	logging.debug('Loaded profile data for user: ' + self.playerName + ' ' + self.username)
@@ -167,9 +168,10 @@ def defaultrun():
 		obj.authenticate()
 
 	    obj.validate()
-	    if not obj.validClientToken:
-		logging.debug('No valid clientToken, refreshing...')
-		obj.refresh()
+#refreshing not working?
+#	    if not obj.validClientToken:
+#		logging.debug('No valid clientToken, refreshing...')
+#		obj.refresh()
 
 	    if not obj.authenticated:
 		logging.debug('Profile does not seem to be authenticated! reauthenticating...')
@@ -222,6 +224,7 @@ for opt, arg in opts:
 		obj.saveauth() 
 		logging.debug('New accessToken is: ' + obj.accessToken)
 		sys.exit()
+
 defaultrun()
 
 logging.info('Script execution came to an end')
