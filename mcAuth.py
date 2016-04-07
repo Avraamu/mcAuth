@@ -12,7 +12,7 @@ save_location = os.path.expanduser('~') + '/.minecraft/launcher_profiles.json'
 cred_location = os.path.expanduser('~') + '/Downloads/cred.json'
 
 
-logging.basicConfig(stream=sys.stdout, filename=os.path.expanduser('~') + '/Downloads/mcAuth.log', level=logging.DEBUG)
+logging.basicConfig(filename=os.path.expanduser('~') + '/Downloads/mcAuth.log', level=logging.DEBUG)
 logging.debug('\n\n***Starting script!')
 
 
