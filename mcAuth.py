@@ -1,11 +1,15 @@
 import requests
 import simplejson as json
 import os
+import logging
 
 url = 'https://authserver.mojang.com'
 save_location = os.path.expanduser('~') + '/.minecraft/launcher_profiles.json'
 cred_location = os.path.expanduser('~') + '/Downloads/cred.json'
 
+
+logging.basicConfig(filename=os.path.expanduser('~') + '/Downloads/mcAuth.log',level=logging.DEBUG)
+logging.debug('\n\n***Starting script!')
 
 def dash(string):
     return string[0:8] + '-' + string[8:12] + '-' + string[12:16] + '-' + string[16:20] + '-' + string[20:]
@@ -44,11 +48,11 @@ class Login:
         response = requests.post(url + "/authenticate", data=json.dumps(param))
         if response.status_code != 200:
             # throw error
-            print('Could not authenticate!')
+            logging.error('Could not authenticate!')
             self.authenticated = False
             self.validClientToken = False
         else:
-            print('Successful new authentication')
+            logging.debug('Successful new authentication')
             jsonResponse = json.loads(response.text)
             self.accessToken = jsonResponse['accessToken']
             self.clientToken = unDash(jsonResponse['clientToken'])
@@ -69,11 +73,11 @@ class Login:
         response = requests.post(url + '/refresh', data=json.dumps(param))
         if response.status_code != 200:
             # throw error
-            print('Could not refresh!')
+            logging.error('Could not refresh!')
             self.authenticated = False
             self.validClientToken = False
         else:
-            print('Successful refresh!')
+            logging.debug('Successful refresh!')
             jsonResponse = json.loads(response.text)
             self.accessToken = jsonResponse['accessToken']
             self.clientToken = jsonResponse['clientToken']
@@ -90,11 +94,11 @@ class Login:
         response = requests.post(url + '/validate', data=json.dumps(param))
         if response.status_code != 204:
             self.validClientToken = False
-            print('Token could not be validated!')
+            logging.error('Token could not be validated!')
         else:
             self.validClientToken = True
             self.authenticated = True
-            print('Token valid!')
+            logging.debug('Token valid!')
 
     def saveauth(self):
         data = {
@@ -139,19 +143,33 @@ class Login:
 try:
     obj = Login()
     try:
+	logging.debug('Attempting launcher_profiles.json read')
         obj.loadauth()
-    except:
+	logging.debug('Loaded profile data for user: ' + obj.playerName + ' ' + ob.username)
+    except Exception as e:
+	logging.exception("Could not load authenticate file! Reauthenticating...")
         obj.authenticate()
 
     obj.validate()
     if not obj.validClientToken:
+	logging.debug('No valid clientToken, refreshing...')
         obj.refresh()
 
     if not obj.authenticated:
+	logging.debug('Profile does not seem to be authenticated! reauthenticating...')
         obj.authenticate()
 
+    logging.debug('Saving authentication...')
     obj.saveauth()
-except:
-    pass
+except Exception as e:
+    logging.exception("CRITICAL: Could not authenticate at all")
 
-os.system('java -jar ~/Downloads/Minecraft.jar')
+
+logging.debug('Attempting minecraft launch...')
+try:
+    os.system('java -jar ~/Downloads/Minecraft.jar')
+    logging.debug('Launcher seems to have been closed!')
+except Exception as e:
+    logging.exception("Unable to start launcher!")
+
+logging.info('Script execution came to an end')
