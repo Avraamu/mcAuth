@@ -4,7 +4,7 @@ import os
 
 url = 'https://authserver.mojang.com'
 save_location = os.path.expanduser('~') + '/.minecraft/launcher_profiles.json'
-cred_loaction = os.path.expanduser('~') + '/Downloads/cred.json'
+cred_location = os.path.expanduser('~') + '/Downloads/cred.json'
 
 
 def dash(string):
