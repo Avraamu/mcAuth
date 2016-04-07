@@ -135,19 +135,22 @@ class Login:
         self.accessToken = loaded['authenticationDatabase'][self.profileIdentifier]['accessToken']
         self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
 
-obj = Login()
 try:
-    obj.loadauth()
+    obj = Login()
+    try:
+        obj.loadauth()
+    except:
+        obj.authenticate()
+
+    obj.validate()
+    if not obj.validClientToken:
+        obj.refresh()
+
+    if not obj.authenticated:
+        obj.authenticate()
+
+    obj.saveauth()
 except:
-    obj.authenticate()
-
-obj.validate()
-if not obj.validClientToken:
-    obj.refresh()
-
-if not obj.authenticated:
-    obj.authenticate()
-
-obj.saveauth()
+    pass
 
 os.system('java -jar ~/Desktop/Minecraft.jar')
