@@ -39,6 +39,7 @@ class Login:
         self.playerName = ''
 
     def authenticate(self):
+	logging.debug('Authenticating using clientToken: ' + self.clientToken)
         param = {
             "agent": {
                 "name": "Minecraft",
@@ -49,6 +50,8 @@ class Login:
         }
         if self.clientToken != '':
             param["clientToken"] = dash(self.clientToken)
+	else:
+	    logging.debug('Sending no clientToken for authentication.')
 
         response = requests.post(url + "/authenticate", data=json.dumps(param))
         if response.status_code != 200:
@@ -57,15 +60,15 @@ class Login:
             self.authenticated = False
             self.validClientToken = False
         else:
-            logging.debug('Successful new authentication')
             jsonResponse = json.loads(response.text)
             self.accessToken = jsonResponse['accessToken']
-            logging.debug('Received clientToken: ' + jsonResponse['clientToken'])
+            logging.debug('Received clientToken: ' + jsonResponse['clientToken'])	#receive as undashed
             self.clientToken = unDash(jsonResponse['clientToken'])
             self.profileIdentifier = jsonResponse['availableProfiles'][0]['id']
             self.playerName = jsonResponse['availableProfiles'][0]['name']
             self.authenticated = True
             self.validClientToken = True
+            logging.debug('Successful new authentication')
 
     def refresh(self):
         param = {
@@ -87,16 +90,17 @@ class Login:
             jsonResponse = json.loads(response.text)
             self.accessToken = jsonResponse['accessToken']
             logging.debug('Received clientToken: ' + jsonResponse['clientToken'])
-            self.clientToken = jsonResponse['clientToken']
+            self.clientToken = jsonResponse['clientToken']	#receive undashed
             self.profileIdentifier = jsonResponse['selectedProfile']['id']
             self.playerName = jsonResponse['selectedProfile']['name']
             self.authenticated = True
             self.validClientToken = True
 
     def validate(self):
+	logging.debug('Validating session...')
         param = {
             "accessToken": self.accessToken,
-            "clientToken": dash(self.clientToken)
+            "clientToken": dash(self.clientToken) #Dashed
         }
         response = requests.post(url + '/validate', data=json.dumps(param))
         if response.status_code != 204:
@@ -108,6 +112,7 @@ class Login:
             logging.debug('Token valid!')
 
     def saveauth(self):
+	logging.debug('Saving profile data to file.')
         data = {
             "profiles": {   
                 self.playerName: {
@@ -115,7 +120,7 @@ class Login:
                 }
             },
             "selectedProfile": self.playerName,
-            "clientToken": dash(self.clientToken),
+            "clientToken": dash(self.clientToken),	#save as dashed
             "authenticationDatabase": {
                 self.profileIdentifier: {
                     "username": self.username,
@@ -139,6 +144,7 @@ class Login:
         f_obj.close()
 
     def loadauth(self):
+	logging.debug('Loading profile file.')
         f_obj = open(save_location, "r")
         loaded = json.loads(f_obj.read())
         f_obj.close()
@@ -147,15 +153,14 @@ class Login:
         self.clientToken = unDash(loaded['clientToken'])
         self.accessToken = loaded['authenticationDatabase'][self.profileIdentifier]['accessToken']
         self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
+	logging.debug('Loaded profile data for user: ' + self.playerName + ' ' + self.username)
 
 
 def defaultrun():
 	try:
 	    obj = Login()
 	    try:
-		logging.debug('Attempting launcher_profiles.json read')
 		obj.loadauth()
-		logging.debug('Loaded profile data for user: ' + obj.playerName + ' ' + obj.username)
 	    except Exception as e:
 		logging.exception("Could not load authenticate file! Reauthenticating...")
 		obj.authenticate()
@@ -169,7 +174,6 @@ def defaultrun():
 		logging.debug('Profile does not seem to be authenticated! reauthenticating...')
 		obj.authenticate()
 
-	    logging.debug('Saving authentication...')
 	    obj.saveauth()
 	except Exception as e:
 	    logging.exception("CRITICAL: Could not authenticate at all")
@@ -193,19 +197,30 @@ def cleanslate():
 
 
 try:
-	opts, args = getopt.getopt(sys.argv[1:],"h", ["cleanslate", "cs"])
+	opts, args = getopt.getopt(sys.argv[1:],"h", ["cleanslate", "validate", "refresh"])
 except getopt.GetoptError:
-	print 'usage: mcAuth.py [--cleanslate] [-h]'
+	print 'usage: mcAuth.py [-h] [--cleanslate] [--validate] [--refresh]'
 	sys.exit(2)
 for opt, arg in opts:
 	if opt == "-h":
-		print 'usage: mcAuth.py [--cleanslate] [-h]'
-		print "    Run without parameters for normal execution \n    Run with --cs or --cleanslate option for new authenticate session"
+		print 'Usage: mcAuth.py [-h] [--cleanslate] [--validate] [--refresh]'
+		print "    Run without parameters for normal execution"
 		sys.exit()
-	elif opt in ("--cleanslate", "--cs"):
+	elif opt in ("--cleanslate"):
 		cleanslate()
 		sys.exit()
-
+	elif opt in ("--validate"):
+		obj = Login()
+		obj.loadauth()
+		obj.validate()
+		sys.exit()
+	elif opt in ("--refresh"):
+		obj = Login()
+		obj.loadauth()
+		obj.refresh()
+		obj.saveauth() 
+		logging.debug('New accessToken is: ' + obj.accessToken)
+		sys.exit()
 defaultrun()
 
 logging.info('Script execution came to an end')
