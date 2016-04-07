@@ -98,7 +98,7 @@ class Login:
             self.validClientToken = True
 
     def validate(self):
-	logging.debug('Validating session...')
+	logging.debug('Validating session with accessToken: ' + self.accessToken + ' and clientToken: ' + dash(self.clientToken))
         param = {
             "accessToken": self.accessToken,
             "clientToken": dash(self.clientToken) #Dashed
