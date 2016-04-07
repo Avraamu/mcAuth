@@ -60,6 +60,7 @@ class Login:
             logging.debug('Successful new authentication')
             jsonResponse = json.loads(response.text)
             self.accessToken = jsonResponse['accessToken']
+            logging.debug('Received clientToken: ' + jsonResponse['clientToken'])
             self.clientToken = unDash(jsonResponse['clientToken'])
             self.profileIdentifier = jsonResponse['availableProfiles'][0]['id']
             self.playerName = jsonResponse['availableProfiles'][0]['name']
@@ -85,6 +86,7 @@ class Login:
             logging.debug('Successful refresh!')
             jsonResponse = json.loads(response.text)
             self.accessToken = jsonResponse['accessToken']
+            logging.debug('Received clientToken: ' + jsonResponse['clientToken'])
             self.clientToken = jsonResponse['clientToken']
             self.profileIdentifier = jsonResponse['selectedProfile']['id']
             self.playerName = jsonResponse['selectedProfile']['name']
@@ -141,6 +143,7 @@ class Login:
         loaded = json.loads(f_obj.read())
         f_obj.close()
         self.profileIdentifier = unDash(loaded['selectedUser'])
+        logging.debug('Loaded clientToken: ' + loaded['clientToken'])
         self.clientToken = unDash(loaded['clientToken'])
         self.accessToken = loaded['authenticationDatabase'][self.profileIdentifier]['accessToken']
         self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
