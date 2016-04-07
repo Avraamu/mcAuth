@@ -24,12 +24,9 @@ def unDash(string):
     return string.replace('-', '')
 
 def isDashed(string):
-    logging.debug('isdashed: ' + string)
     if string[8] == '-':
-        logging.debug('yes')
         return True
     else:
-        logging.debug('no')
         return False
 
 class Login:
