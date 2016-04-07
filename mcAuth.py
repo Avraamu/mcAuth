@@ -4,6 +4,7 @@ import os
 
 url = 'https://authserver.mojang.com'
 save_location = os.path.expanduser('~') + '/.minecraft/launcher_profiles.json'
+cred_location = os.path.expanduser('~') + '/Downloads/cred.json'
 
 
 def dash(string):
@@ -16,14 +17,14 @@ def unDash(string):
 
 class Login:
     def __init__(self):
-        f_obj = open('cred.json')
+        f_obj = open(cred_location)
         userpass = json.loads(f_obj.read())
         self.username = userpass['username']
         self.password = userpass['password']
 
         self.authenticated = False
         self.validClientToken = False
-        self.clientToken = 'd3573a14357345e7a94c1dc22fb8acbd'
+        self.clientToken = ''
         self.accessToken = ''
         self.profileIdentifier = ''
         self.playerName = ''
@@ -153,4 +154,4 @@ try:
 except:
     pass
 
-os.system('java -jar ~/Desktop/Minecraft.jar')
+os.system('java -jar ~/Downloads/Minecraft.jar')
