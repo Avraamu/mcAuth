@@ -93,7 +93,7 @@ class Login:
         response = requests.post(url + "/authenticate", data=json.dumps(param))
         if response.status_code != 200:
             # throw error
-            logging.error('Could not authenticate!')
+            logging.error('Could not authenticate!' + response.text)
             self.authenticated = False
             self.validClientToken = False
         else:
@@ -209,6 +209,7 @@ class Login:
 
 
 def defaultrun():
+    logging.debug('Default run...')
     try:
         try:
             obj.loadauth()
@@ -279,7 +280,7 @@ for opt, arg in opts:
         else:
             logging.debug('Incorrect username or password')
         sys.exit()
-    if opt in ('--getmojangid'):
+    elif opt in ('--getmojangid'):
         obj.loadauth()  #Need a valid accessToken
         obj.getmojangid()
         obj.saveauth()  #Save mojangid to file
