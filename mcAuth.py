@@ -68,7 +68,7 @@ class Login:
         headers = {'Authorization': 'Bearer ' + self.accessToken}
         response = requests.get('https://api.mojang.com/user', headers=headers)
         if response.status_code != 200:
-            logging.error('Could not get mojangid: ' + reponse.text)
+            logging.error('Could not get mojangid: ' + response.text)
         else:
             self.mojangid = json.loads(response.text)['id']
             logging.debug('Got mojangid!: ' + self.mojangid)
@@ -210,6 +210,7 @@ class Login:
 
 def defaultrun():
     logging.debug('Default run...')
+    
     try:
         try:
             obj.loadauth()
@@ -226,17 +227,19 @@ def defaultrun():
         if not obj.authenticated:
             logging.error('Profile does not seem to be authenticated! reauthenticating...')
             obj.authenticate()
-        try:
+
+        if obj.mojangid == '':
+            logging.debug('Not mojangid found...')
             obj.getmojangid()
-        except:
-            logging.error('Getmojangid function call failed.')
+            logging.debug('New mojangid: ' + obj.mojangid)
+
 
         obj.saveauth()
     except Exception as e:
         logging.exception("CRITICAL: Could not authenticate at all")
 
     logging.debug('Attempting minecraft launch...')
-    os.system('java -jar ~/Downloads/Minecraft.jar')
+    os.system('java -jar Minecraft.jar')
     logging.debug('Launcher seems to have been closed!')
 
 
