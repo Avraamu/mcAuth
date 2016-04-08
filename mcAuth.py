@@ -239,7 +239,7 @@ def defaultrun():
         logging.exception("CRITICAL: Could not authenticate at all")
 
     logging.debug('Attempting minecraft launch...')
-    os.system('java -jar Minecraft.jar')
+    os.system('java -jar ~/mcAuth/Minecraft.jar')
     logging.debug('Launcher seems to have been closed!')
 
 
