@@ -93,11 +93,7 @@ class Login:
         response = requests.post(url + "/authenticate", data=json.dumps(param))
         if response.status_code != 200:
             # throw error
-<<<<<<< HEAD
             logging.error('Could not authenticate! ' + response.text)
-=======
-            logging.error('Could not authenticate! ' + response.text)
->>>>>>> master
             self.authenticated = False
             self.validClientToken = False
         else:
