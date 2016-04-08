@@ -93,7 +93,11 @@ class Login:
         response = requests.post(url + "/authenticate", data=json.dumps(param))
         if response.status_code != 200:
             # throw error
-            logging.error('Could not authenticate!' + response.text)
+<<<<<<< HEAD
+            logging.error('Could not authenticate! ' + response.text)
+=======
+            logging.error('Could not authenticate! ' + response.text)
+>>>>>>> master
             self.authenticated = False
             self.validClientToken = False
         else:
@@ -265,7 +269,9 @@ for opt, arg in opts:
         obj.clientToken = arg
 
     if opt in ('--update'):
+        logging.debug('Updating...')
         update()
+        sys.exit()
     elif opt in ('--newprofile'):
         print 'Username: '
         obj.username = raw_input()
