@@ -4,6 +4,7 @@ import sys
 import getopt
 import requests
 import simplejson as json
+import uuid
 import os
 import logging
 
@@ -31,31 +32,48 @@ def isDashed(string):
 
 class Login:
     def __init__(self):
-        f_obj = open(cred_location)
-        userpass = json.loads(f_obj.read())
-        f_obj.close()
-        self.username = userpass['username']
-        self.password = userpass['password']
-        self.mojangid = userpass['mojangid'] #undashed
-
+        self.loadcred()
         self.authenticated = False
         self.validClientToken = False
         self.clientToken = '' #Always dashed, except for bug in /authenticate endpoint
         self.accessToken = '' #Always dashed
         self.profileIdentifier = '' #Always dashed except for in selected_profile
         self.playerName = ''
+        self.username = ''
+        self.password = ''
+        self.mojangid = ''
+    
+    def loadcred(self):
+        if os.path.isfile(cred_location):
+            f_obj = open(cred_location, 'r+')
+            userpass = json.loads(f_obj.read())
+            f_obj.close()
+            self.username = userpass['username']
+            self.password = userpass['password']
+            self.mojangid = userpass['mojangid']
+            logging.debug('Loaded credentials: ' + str(userpass))
+        else:
+            logging.error('Could not find cred.json file...')
+
+    def savecred(self):
+        userpass = {}
+        userpass['username'] = self.username
+        userpass['password'] = self.password
+        userpass['mojangid'] = self.mojangid #undashed
+        f_obj = open(cred_location, 'w+')
+        f_obj.write(json.dumps(userpass))
+        f_obj.close()
 
     def getmojangid(self):  #Need a valid accessToken for this to work
         headers = {'Authorization': 'Bearer ' + self.accessToken}
         response = requests.get('https://api.mojang.com/user', headers=headers)
         if response.status_code != 200:
-            logging.debug('Could not get mojangid: ' + reponse.text)
+            logging.error('Could not get mojangid: ' + reponse.text)
         else:
             self.mojangid = json.loads(response.text)['id']
             logging.debug('Got mojangid!: ' + self.mojangid)
 
     def authenticate(self):
-        logging.debug('Authenticating using clientToken: ' + self.clientToken)
         param = {
             "agent": {
                 "name": "Minecraft",
@@ -66,8 +84,11 @@ class Login:
         }
         if self.clientToken != '':
             param["clientToken"] = self.clientToken
+            logging.debug('Authenticating using existing clientToken: ' + self.clientToken)
         else:
-            logging.debug('Sending no clientToken for authentication.')
+            self.clientToken = uuid.uuid4().urn[9:]
+            param['clientToken'] = self.clientToken
+            logging.debug('No clientToken found, mew clientToken: ' + self.clientToken)
 
         response = requests.post(url + "/authenticate", data=json.dumps(param))
         if response.status_code != 200:
@@ -94,7 +115,7 @@ class Login:
     def refresh(self):
         param = {
             "accessToken": self.accessToken,
-            "clientToken": unDash(self.clientToken),
+            "clientToken": self.clientToken,
             "selectedProfile": {
                 "id": self.profileIdentifier,
                 "name": self.playerName
@@ -177,14 +198,23 @@ class Login:
         self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
         logging.debug('Loaded profile data for user: ' + self.playerName + ' ' + self.username)
 
+    def cleanslate(self):
+        try:
+            logging.debug('Cleanslate...')
+            self.clientToken = ''
+            self.authenticate()
+            self.saveauth()
+        except:
+            logging.exception('Failed to authencticate :(, not saving.')
+
 
 def defaultrun():
     try:
         try:
             obj.loadauth()
         except Exception as e:
-            logging.exception("Could not load authenticate file! Reauthenticating...")
-            obj.authenticate()
+            logging.exception("Could not load profile file! Reauthenticating...")
+            obj.cleanslate()
 
         obj.validate()
 #refreshing not working?
@@ -193,9 +223,13 @@ def defaultrun():
 #       obj.refresh()
 
         if not obj.authenticated:
-            logging.debug('Profile does not seem to be authenticated! reauthenticating...')
+            logging.error('Profile does not seem to be authenticated! reauthenticating...')
             obj.authenticate()
-        
+        try:
+            obj.getmojangid()
+        except:
+            logging.error('Getmojangid function call failed.')
+
         obj.saveauth()
     except Exception as e:
         logging.exception("CRITICAL: Could not authenticate at all")
@@ -204,33 +238,55 @@ def defaultrun():
     os.system('java -jar ~/Downloads/Minecraft.jar')
     logging.debug('Launcher seems to have been closed!')
 
-def cleanslate():
-    try:
-        logging.debug('Trying authenticate...')
-        obj.authenticate()
-        obj.saveauth()
-    except:
-        logging.exception('Failed to authencticate :(, not saving.')
 
+
+helpstring = 'usage: mcAuth.py [-h] [--ct=CLIENTTOKEN] [--newprofile] [--cleanslate] [--validate] [--refresh] [--getmojangid]\n    Run without parameters for normal execution'
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:],"h", ['ct=', 'authenticate',  'cleanslate', 'validate', 'refresh', 'getmojangid'])
+    opts, args = getopt.getopt(sys.argv[1:],"h", ['ct=', 'authenticate', 'newprofile', 'cleanslate', 'cs', 'validate', 'refresh', 'getmojangid'])
 except getopt.GetoptError:
-    print 'usage: mcAuth.py [-h] [--ct=CLIENTTOKEN] [--cleanslate] [--validate] [--refresh] [--getmojangid]'
+    print helpstring
     sys.exit(2)
 
 obj = Login()
 for opt, arg in opts:
     if opt == '-h':
-        print 'Usage: mcAuth.py [-h] [--ct=CLIENTTOKEN] [--cleanslate] [--validate] [--refresh] [--getmojangid]'
-        print '    Run without parameters for normal execution'
+        print helpstring
         sys.exit()
 
     if opt in ('--ct'):
         obj.clientToken = arg
 
-    if opt in ('--cleanslate'):
-        cleanslate()
+    if opt in ('--newprofile'):
+        print 'Username: '
+        obj.username = raw_input()
+        print 'Password: '
+        obj.password = raw_input()
+        obj.authenticate()
+        if obj.authenticated:
+            obj.getmojangid()
+            obj.savecred()
+            obj.saveauth()
+            logging.debug('Seem to have authenticated!')
+        else:
+            logging.debug('Incorrect username or password')
+        sys.exit()
+    if opt in ('--getmojangid'):
+        obj.loadauth()  #Need a valid accessToken
+        obj.getmojangid()
+        obj.saveauth()  #Save mojangid to file
+
+        f_obj = open(cred_location, 'r+')   #Read credentials, update, save
+        contents = f_obj.read()
+        contents = json.loads(contents)
+        contents['mojangid'] = obj.mojangid
+        f_obj.seek(0)
+        f_obj.write(json.dumps(contents))
+        f_obj.close()
+
+        sys.exit()
+    elif opt in ('--cleanslate', '--cs'):
+        obj.cleanslate()
         sys.exit()
     elif opt in ('--validate'):
         obj.loadauth()
@@ -242,21 +298,6 @@ for opt, arg in opts:
         obj.saveauth() 
         logging.debug('New accessToken is: ' + obj.accessToken)
         sys.exit()
-    elif opt in ('--getmojangid'):
-        obj.loadauth()
-        obj.getmojangid()
-        obj.saveauth()
-        f_obj = open(cred_location, 'r+')
-        contents = f_obj.read()
-        logging.debug(contents)
-        contents = json.loads(contents)
-        contents['mojangid'] = obj.mojangid
-        f_obj.seek(0)
-        f_obj.write(json.dumps(contents))
-        f_obj.close()
-
-        sys.exit()
-
 
 defaultrun()
 
