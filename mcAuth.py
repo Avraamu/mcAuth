@@ -239,11 +239,17 @@ def defaultrun():
     logging.debug('Launcher seems to have been closed!')
 
 
+def update():
+    response = requests.get('https://raw.githubusercontent.com/Avraamu/mcAuth/live/mcAuth.py')
+    f_obj = open('mcAuth.py', 'w+')
+    f_obj.write(response.text)
+    f_obj.close()
 
-helpstring = 'usage: mcAuth.py [-h] [--ct=CLIENTTOKEN] [--newprofile] [--cleanslate] [--validate] [--refresh] [--getmojangid]\n    Run without parameters for normal execution'
+
+helpstring = 'usage: mcAuth.py [-h] [--update] [--ct=CLIENTTOKEN] [--newprofile] [--cleanslate] [--validate] [--refresh] [--getmojangid]\n    Run without parameters for normal execution'
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:],"h", ['ct=', 'authenticate', 'newprofile', 'cleanslate', 'cs', 'validate', 'refresh', 'getmojangid'])
+    opts, args = getopt.getopt(sys.argv[1:],"h", ['ct=', 'update', 'newprofile', 'cleanslate', 'cs', 'validate', 'refresh', 'getmojangid'])
 except getopt.GetoptError:
     print helpstring
     sys.exit(2)
@@ -257,7 +263,9 @@ for opt, arg in opts:
     if opt in ('--ct'):
         obj.clientToken = arg
 
-    if opt in ('--newprofile'):
+    if opt in ('--update'):
+        update()
+    elif opt in ('--newprofile'):
         print 'Username: '
         obj.username = raw_input()
         print 'Password: '
