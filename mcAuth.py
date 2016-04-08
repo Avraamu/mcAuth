@@ -10,10 +10,10 @@ import logging
 
 url = 'https://authserver.mojang.com'
 save_location = os.path.expanduser('~') + '/.minecraft/launcher_profiles.json'
-cred_location = os.path.expanduser('~') + '/Downloads/cred.json'
+cred_location = 'cred.json'
 
 
-logging.basicConfig(filename=os.path.expanduser('~') + '/Downloads/mcAuth.log', level=logging.DEBUG)
+logging.basicConfig(filename='mcAuth.log', level=logging.DEBUG)
 logging.debug('\n\n***Starting script!')
 
 
