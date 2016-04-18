@@ -8,6 +8,10 @@ import uuid
 import os
 import logging
 
+proxy = {
+    'http': 'http://pg-webserver:30264'
+}
+
 url = 'https://authserver.mojang.com'
 save_location = os.path.expanduser('~') + '/.minecraft/launcher_profiles.json'
 cred_location = os.path.expanduser('~') + '/mcAuth/cred.json'
@@ -66,7 +70,7 @@ class Login:
 
     def getmojangid(self):  #Need a valid accessToken for this to work
         headers = {'Authorization': 'Bearer ' + self.accessToken}
-        response = requests.get('https://api.mojang.com/user', headers=headers)
+        response = requests.get('https://api.mojang.com/user', headers=headers, proxies=proxy)
         if response.status_code != 200:
             logging.error('Could not get mojangid: ' + response.text)
         else:
@@ -90,7 +94,7 @@ class Login:
             param['clientToken'] = self.clientToken
             logging.debug('No clientToken found, mew clientToken: ' + self.clientToken)
 
-        response = requests.post(url + "/authenticate", data=json.dumps(param))
+        response = requests.post(url + "/authenticate", data=json.dumps(param), proxies=proxy)
         if response.status_code != 200:
             # throw error
             logging.error('Could not authenticate! ' + response.text)
@@ -121,7 +125,7 @@ class Login:
                 "name": self.playerName
             }
         }
-        response = requests.post(url + '/refresh', data=json.dumps(param))
+        response = requests.post(url + '/refresh', data=json.dumps(param), proxies=proxy)
         if response.status_code != 200:
             # throw error
             logging.error('Could not refresh!')
@@ -144,7 +148,7 @@ class Login:
             "accessToken": self.accessToken,
             "clientToken": self.clientToken #Dashed
         }
-        response = requests.post(url + '/validate', data=json.dumps(param))
+        response = requests.post(url + '/validate', data=json.dumps(param), proxies=proxy)
         if response.status_code != 204:
             self.validClientToken = False
             logging.error('Token could not be validated!')
