@@ -16,7 +16,7 @@ log_location = os.path.expanduser('~') + '/mcAuth/mcAuth.log'
 logging.basicConfig(filename=log_location, level=logging.DEBUG)
 logging.debug('\n\n***Starting script!')
 
-
+authloaded = 0
 def dash(string):
     return string[0:8] + '-' + string[8:12] + '-' + string[12:16] + '-' + string[16:20] + '-' + string[20:]
 
@@ -186,17 +186,25 @@ class Login:
         f_obj.close()
 
     def loadauth(self):
-        logging.debug('Loading profile file.')
-        f_obj = open(save_location, "r")
-        loaded = json.loads(f_obj.read())
-        f_obj.close()
-        self.profileIdentifier = loaded['selectedUser']
-        logging.debug('Loaded clientToken: ' + loaded['clientToken'])
-        self.clientToken = loaded['clientToken']
-        self.accessToken = loaded['authenticationDatabase'][self.profileIdentifier]['accessToken']
-        self.mojangid = loaded['authenticationDatabase'][self.profileIdentifier]['userid']
-        self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
-        logging.debug('Loaded profile data for user: ' + self.playerName + ' ' + self.username)
+        authloaded = 0
+        logging.debug('Loading profile file...')
+        if (os.path.isfile(save_location)):
+            try:
+                f_obj = open(save_location, "r")
+                loaded = json.loads(f_obj.read())
+                f_obj.close()
+                self.profileIdentifier = loaded['selectedUser']
+                logging.debug('Loaded clientToken: ' + loaded['clientToken'])
+                self.clientToken = loaded['clientToken']
+                self.accessToken = loaded['authenticationDatabase'][self.profileIdentifier]['accessToken']
+                self.mojangid = loaded['authenticationDatabase'][self.profileIdentifier]['userid']
+                self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
+                logging.debug('Loaded profile data for user: ' + self.playerName + ' ' + self.username)
+                authloaded = 1
+            except:
+                logging.error('Error on loading profile file, but file exists!')
+        else:
+            logging.error('No profile file found!')
 
     def cleanslate(self):
         try:
@@ -205,20 +213,19 @@ class Login:
             self.authenticate()
             self.saveauth()
         except:
-            logging.exception('Failed to authencticate :(, not saving.')
+            logging.exception('Cleanslate failed')
 
 
 def defaultrun():
     logging.debug('Default run...')
     
     try:
-        try:
-            obj.loadauth()
-        except Exception as e:
-            logging.exception("Could not load profile file! Reauthenticating...")
+        obj.loadauth()
+        obj.validate()
+        if not authloaded:
+            logging.error('Error on auth load... cleanslating...')
             obj.cleanslate()
 
-        obj.validate()
 #refreshing not working?
 #       if not obj.validClientToken:
 #       logging.debug('No valid clientToken, refreshing...')
@@ -228,15 +235,10 @@ def defaultrun():
             logging.error('Profile does not seem to be authenticated! reauthenticating...')
             obj.authenticate()
 
-        if obj.mojangid == '':
-            logging.debug('Not mojangid found...')
-            obj.getmojangid()
-            logging.debug('New mojangid: ' + obj.mojangid)
-
 
         obj.saveauth()
     except Exception as e:
-        logging.exception("CRITICAL: Could not authenticate at all")
+        logging.exception("CRITICAL: defaultrun failed")
 
     logging.debug('Attempting minecraft launch...')
     os.system('java -jar ~/mcAuth/Minecraft.jar')
