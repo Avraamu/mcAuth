@@ -37,8 +37,9 @@ def isDashed(string):
 class Login:
     def __init__(self):
         self.loadcred()
+        self.credLoaded = False
+        self.profileLoaded = False
         self.authenticated = False
-        self.validClientToken = False
         self.clientToken = '' #Always dashed, except for bug in /authenticate endpoint
         self.accessToken = '' #Always dashed
         self.profileIdentifier = '' #Always dashed except for in selected_profile
@@ -48,16 +49,25 @@ class Login:
         self.mojangid = ''
     
     def loadcred(self):
-        if os.path.isfile(cred_location):
-            f_obj = open(cred_location, 'r+')
-            userpass = json.loads(f_obj.read())
-            f_obj.close()
-            self.username = userpass['username']
-            self.password = userpass['password']
-            self.mojangid = userpass['mojangid']
-            logging.debug('Loaded credentials: ' + str(userpass))
-        else:
-            logging.error('Could not find cred.json file...')
+        try:
+            if os.path.isfile(cred_location):
+                f_obj = open(cred_location, 'r+')
+                userpass = json.loads(f_obj.read())
+                f_obj.close()
+                self.username = userpass['username']
+                self.password = userpass['password']
+                if not 'mojangid' in userpass:
+                    self.getmojangid()
+                else:
+                    self.mojangid = userpass['mojangid']
+                logging.debug('Loaded credentials: ' + str(userpass))
+                self.credLoaded = True
+            else:
+                logging.error('Could not find cred.json file...')
+                self.credLoaded = False
+        except:
+            logging.error('Unknown error on credential loading!')
+            self.credLoaded = False
 
     def savecred(self):
         userpass = {}
@@ -99,7 +109,6 @@ class Login:
             # throw error
             logging.error('Could not authenticate! ' + response.text)
             self.authenticated = False
-            self.validClientToken = False
         else:
             jsonResponse = json.loads(response.text)
             logging.debug('Received accessToken: ' + jsonResponse['accessToken'])
@@ -112,9 +121,8 @@ class Login:
             logging.debug('New clienToken: ' + self.clientToken)
             self.profileIdentifier = jsonResponse['availableProfiles'][0]['id']
             self.playerName = jsonResponse['availableProfiles'][0]['name']
-            self.authenticated = True
-            self.validClientToken = True
             logging.debug('Successful new authentication (new clienttoken: ' + self.clientToken)
+            self.authenticated = True
 
     def refresh(self):
         param = {
@@ -130,7 +138,6 @@ class Login:
             # throw error
             logging.error('Could not refresh!')
             self.authenticated = False
-            self.validClientToken = False
         else:
             logging.debug('Successful refresh!')
             jsonResponse = json.loads(response.text)
@@ -140,7 +147,7 @@ class Login:
             self.profileIdentifier = jsonResponse['selectedProfile']['id']
             self.playerName = jsonResponse['selectedProfile']['name']
             self.authenticated = True
-            self.validClientToken = True
+            self.validAccessToken = True
 
     def validate(self):
         logging.debug('Validating session with accessToken: ' + self.accessToken + ' and clientToken: ' + self.clientToken)
@@ -150,10 +157,9 @@ class Login:
         }
         response = requests.post(url + '/validate', data=json.dumps(param), proxies=proxy)
         if response.status_code != 204:
-            self.validClientToken = False
+            self.authenticated = False
             logging.error('Token could not be validated!')
         else:
-            self.validClientToken = True
             self.authenticated = True
             logging.debug('Token valid!')
 
@@ -190,17 +196,25 @@ class Login:
         f_obj.close()
 
     def loadauth(self):
-        logging.debug('Loading profile file.')
-        f_obj = open(save_location, "r")
-        loaded = json.loads(f_obj.read())
-        f_obj.close()
-        self.profileIdentifier = loaded['selectedUser']
-        logging.debug('Loaded clientToken: ' + loaded['clientToken'])
-        self.clientToken = loaded['clientToken']
-        self.accessToken = loaded['authenticationDatabase'][self.profileIdentifier]['accessToken']
-        self.mojangid = loaded['authenticationDatabase'][self.profileIdentifier]['userid']
-        self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
-        logging.debug('Loaded profile data for user: ' + self.playerName + ' ' + self.username)
+        try:
+            logging.debug('Loading profile file.')
+            f_obj = open(save_location, "r")
+            loaded = json.loads(f_obj.read())
+            f_obj.close()
+            self.profileIdentifier = loaded['selectedUser']
+            logging.debug('Loaded clientToken: ' + loaded['clientToken'])
+            self.clientToken = loaded['clientToken']
+            self.accessToken = loaded['authenticationDatabase'][self.profileIdentifier]['accessToken']
+            self.mojangid = loaded['authenticationDatabase'][self.profileIdentifier]['userid']
+            self.playerName = loaded['authenticationDatabase'][self.profileIdentifier]['displayName']
+
+            if self.mojangid == '':
+                self.getmojangid()
+            logging.debug('Loaded profile data for user: ' + self.playerName + ' ' + self.username + ' ' + self.mojangid)
+            self.profileLoaded = True
+        except Exception as e:
+            logging.error('Unable to load profile file...' + str(e))
+            self.profileLoaded = False
 
     def cleanslate(self):
         try:
@@ -216,35 +230,36 @@ def defaultrun():
     logging.debug('Default run...')
     
     try:
-        try:
+        obj.loadcred()
+        if not obj.credLoaded:
+            logging.exception('Unable to load credential file, giving up...')
+        else:
             obj.loadauth()
-        except Exception as e:
-            logging.exception("Could not load profile file! Reauthenticating...")
-            obj.cleanslate()
+            if not obj.profileLoaded:
+                logging.error("Could not load profile file! Reauthenticating...")
+                obj.cleanslate()
+                logging.exception('Cleanslated')
+            else:
+                obj.validate()
+                if not obj.authenticated:
+                    logging.error('Profile does not seem to be authenticated! reauthenticating...')
+                    obj.authenticate()
+                    obj.saveauth()
+    finally:
+        logging.error('sys exec info: ' + str(sys.exc_info()[0]))
+            
+        logging.debug('Attempting minecraft launch...')
+        os.system('java -jar ~/mcAuth/Minecraft.jar')
+        logging.debug('Launcher seems to have been closed!')
 
-        obj.validate()
+
+
 #refreshing not working?
 #       if not obj.validClientToken:
 #       logging.debug('No valid clientToken, refreshing...')
 #       obj.refresh()
 
-        if not obj.authenticated:
-            logging.error('Profile does not seem to be authenticated! reauthenticating...')
-            obj.authenticate()
 
-        if obj.mojangid == '':
-            logging.debug('Not mojangid found...')
-            obj.getmojangid()
-            logging.debug('New mojangid: ' + obj.mojangid)
-
-
-        obj.saveauth()
-    except Exception as e:
-        logging.exception("CRITICAL: Could not authenticate at all")
-
-    logging.debug('Attempting minecraft launch...')
-    os.system('java -jar ~/mcAuth/Minecraft.jar')
-    logging.debug('Launcher seems to have been closed!')
 
 
 helpstring = 'usage: mcAuth.py [-h] [--update] [--ct=CLIENTTOKEN] [--newprofile] [--cleanslate] [--validate] [--refresh] [--getmojangid]\n    Run without parameters for normal execution'
