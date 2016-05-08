@@ -9,8 +9,9 @@ import os
 import logging
 
 proxy = {
-    'http': 'http://pg-webserver:30264'
+    #'http': 'http://pg-webserver:30264'
 }
+useproxy = 0
 
 url = 'https://authserver.mojang.com'
 save_location = os.path.expanduser('~') + '/.minecraft/launcher_profiles.json'
